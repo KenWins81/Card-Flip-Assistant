@@ -16,7 +16,24 @@ const CardFlipAssistant = () => {
   const [emailConfigured, setEmailConfigured] = useState(false);
 
   // Fetch opportunities from backend
-  const fetchOpportunities = useCallback(async () => {
+ const fetchOpportunities = useCallback(async () => {
+     setLoading(true);
+     try {
+       const params = new URLSearchParams();
+       if (filterType !== 'all') params.append('type', filterType);
+       if (filterRisk !== 'all') params.append('risk', filterRisk);
+       
+       const response = await fetch(`${API_URL}/opportunities?${params}`);
+       const data = await response.json();
+       
+       if (data.success) {
+         setOpportunities(data.opportunities);
+       }
+     } catch (error) {
+       console.error('Error fetching opportunities:', error);
+     }
+     setLoading(false);
+   }, [filterType, filterRisk]);
     setLoading(true);
     try {
       const params = new URLSearchParams();

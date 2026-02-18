@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, TrendingUp, DollarSign, Clock, AlertCircle, Star, Download, RefreshCw, Bell, Package, BarChart3, Settings, CheckCircle, Mail } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, TrendingUp, AlertCircle, RefreshCw, Bell, Package, Mail } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
@@ -16,7 +16,7 @@ const CardFlipAssistant = () => {
   const [emailConfigured, setEmailConfigured] = useState(false);
 
   // Fetch opportunities from backend
-  const fetchOpportunities = async () => {
+  const fetchOpportunities = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -33,7 +33,7 @@ const CardFlipAssistant = () => {
       console.error('Error fetching opportunities:', error);
     }
     setLoading(false);
-  };
+  }, [filterType, filterRisk]);
 
   // Fetch purchases
   const fetchPurchases = async () => {
@@ -186,7 +186,7 @@ const CardFlipAssistant = () => {
     }, 5 * 60 * 1000);
     
     return () => clearInterval(interval);
-  }, [filterType, filterRisk]);
+  }, [fetchOpportunities]);
 
   const getRiskColor = (risk) => {
     switch(risk) {

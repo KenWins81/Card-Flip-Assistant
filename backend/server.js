@@ -546,6 +546,35 @@ app.post('/api/test-email', async (req, res) => {
   }
 });
 
+// Test eBay API
+app.get('/api/test-ebay', async (req, res) => {
+  try {
+    const testUrl = `https://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findItemsByKeywords&SERVICE-VERSION=1.0.0&SECURITY-APPNAME=${CONFIG.ebay.appId}&RESPONSE-DATA-FORMAT=JSON&REST-PAYLOAD&keywords=pokemon&paginationInput.entriesPerPage=1`;
+    
+    const response = await axios.get(testUrl);
+    
+    if (response.data.findItemsByKeywordsResponse?.[0]?.ack?.[0] === 'Success') {
+      res.json({ 
+        success: true, 
+        message: 'eBay API is working!',
+        itemCount: response.data.findItemsByKeywordsResponse[0].searchResult[0]['@count']
+      });
+    } else {
+      res.json({ 
+        success: false, 
+        message: 'eBay returned an error',
+        response: response.data 
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      details: error.response?.data || 'No additional details'
+    });
+  }
+});
+
 // ========================================
 // SCHEDULED SCANNING
 // ========================================

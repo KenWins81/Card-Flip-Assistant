@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -33,22 +32,30 @@ const CONFIG = {
   }
 };
 
-// Email transporter
-const emailTransporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: CONFIG.email.user,
-    pass: CONFIG.email.pass
-  },
-  tls: {
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000
-});
+// Email configuration using Resend
+async function sendEmail(to, subject, html) {
+  try {
+    const response = await axios.post(
+      'https://api.resend.com/emails',
+      {
+        from: CONFIG.email.user,
+        to: [to],
+        subject: subject,
+        html: html
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${CONFIG.email.pass}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error('Email error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || error.message);
+  }
+}
 
 // In-memory storage (will move to database)
 let opportunities = [];
@@ -361,7 +368,27 @@ async function sendOpportunityAlert(opportunities) {
   };
   
   try {
-    await emailTransporter.sendMail(mailOptions);
+    await sendEmail(
+      CONFIG.email.alertTo,
+      `🚨 ${opportunities.length} New Card Flip Opportunit${opportunities.length > 1 ? 'ies' : 'y'} Found!`,
+      `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0;">💎 New Flip Opportunities</h1>
+          <p style="margin: 8px 0 0 0; opacity: 0.9;">Found ${opportunities.length} high-confidence opportunit${opportunities.length > 1 ? 'ies' : 'y'} matching your criteria</p>
+        </div>
+        <div style="padding: 24px; background: white;">
+          ${opportunitiesHtml}
+          <div style="margin-top: 24px; padding: 16px; background: #eff6ff; border-radius: 8px; border-left: 4px solid #2563eb;">
+            <p style="margin: 0; color: #1e40af;"><strong>💡 Tip:</strong> Act fast on high-confidence opportunities. Check photos carefully before purchasing.</p>
+          </div>
+        </div>
+        <div style="padding: 16px; background: #f3f4f6; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px; color: #6b7280;">
+          Powered by Card Flip Assistant | <a href="#" style="color: #2563eb;">Manage Alert Settings</a>
+        </div>
+      </div>
+      `
+    );
     console.log(`📧 Alert sent to ${CONFIG.email.alertTo}`);
     
     alertHistory.push({
@@ -541,12 +568,11 @@ app.get('/api/stats', (req, res) => {
 // Test email
 app.post('/api/test-email', async (req, res) => {
   try {
-    await emailTransporter.sendMail({
-      from: CONFIG.email.user,
-      to: CONFIG.email.alertTo,
-      subject: '✅ Card Flip Assistant - Email Test',
-      html: '<h2>Your email alerts are working!</h2><p>You will receive real-time notifications when new opportunities are found.</p>'
-    });
+    await sendEmail(
+      CONFIG.email.alertTo,
+      '✅ Card Flip Assistant - Email Test',
+      '<h2>Your email alerts are working!</h2><p>You will receive real-time notifications when new opportunities are found.</p>'
+    );
     
     res.json({ success: true, message: 'Test email sent' });
   } catch (error) {

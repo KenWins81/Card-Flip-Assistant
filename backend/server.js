@@ -27,7 +27,7 @@ const CONFIG = {
     alertTo: process.env.ALERT_EMAIL
   },
   scanning: {
-    intervalMinutes: 15, // How often to scan for new opportunities
+    intervalMinutes: parseInt(process.env.SCAN_INTERVAL_MINUTES) || 15, // How often to scan for new opportunities
     minProfit: 30, // Minimum profit to alert
     minConfidence: 70 // Minimum confidence score to alert
   }
@@ -605,8 +605,10 @@ app.listen(PORT, () => {
 ╚════════════════════════════════════════════╝
   `);
   
-  // Start scanning if eBay credentials are configured
-  if (CONFIG.ebay.appId) {
+  // Start scanning if eBay credentials are configured AND auto-scan is not disabled
+  if (process.env.DISABLE_AUTO_SCAN === 'true') {
+    console.log('⚠️  Auto-scanning is DISABLED. Set DISABLE_AUTO_SCAN=false to enable.');
+  } else if (CONFIG.ebay.appId) {
     startScheduledScanning();
   } else {
     console.log('⚠️  eBay API credentials not configured. Add to .env file to enable scanning.');

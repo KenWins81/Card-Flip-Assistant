@@ -35,11 +35,19 @@ const CONFIG = {
 
 // Email transporter
 const emailTransporter = nodemailer.createTransport({
-  service: CONFIG.email.service,
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: CONFIG.email.user,
     pass: CONFIG.email.pass
-  }
+  },
+  tls: {
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000
 });
 
 // In-memory storage (will move to database)

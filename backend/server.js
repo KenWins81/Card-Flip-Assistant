@@ -32,16 +32,25 @@ const CONFIG = {
   }
 };
 
-// Email configuration using Resend
+// Email configuration using SendGrid
 async function sendEmail(to, subject, html) {
   try {
     const response = await axios.post(
-      'https://api.resend.com/emails',
+      'https://api.sendgrid.com/v3/mail/send',
       {
-        from: CONFIG.email.user,
-        to: [to],
-        subject: subject,
-        html: html
+        personalizations: [
+          {
+            to: [{ email: to }],
+            subject: subject
+          }
+        ],
+        from: { email: CONFIG.email.user },
+        content: [
+          {
+            type: 'text/html',
+            value: html
+          }
+        ]
       },
       {
         headers: {
@@ -53,7 +62,7 @@ async function sendEmail(to, subject, html) {
     return { success: true, data: response.data };
   } catch (error) {
     console.error('Email error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || error.message);
+    throw new Error(error.response?.data?.errors?.[0]?.message || error.message);
   }
 }
 
